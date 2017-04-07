@@ -1,0 +1,27 @@
+select tab.order_date , tab.h as hour, 
+count(case when diaodu_length>=10 then tab.tracking_id end) as `调度时长超过10分钟的推单数`,
+count(case when arrive_length>=30 then tab.tracking_id end) as `到店时间超过30分钟的推单数`,
+count(case when take_length>=20 then tab.tracking_id end) as `取餐时间超过20分钟的推单数`,
+count(case when songcan_length>=60 then tab.tracking_id end) as `送餐时间超过60分钟的推单数`,
+count(tab.tracking_id ) as `推单数`,
+round(count(case when diaodu_length>=10 then tab.tracking_id end)/count(tab.tracking_id ),3) as `调度时长超过十分钟的推单比率`,
+round(count(case when arrive_length>=30 then tab.tracking_id end)／count(tab.tracking_id ),3) as `到店时间超过30分钟的推单比率`,
+round(count(case when take_length>=20 then tab.tracking_id end)/count(tab.tracking_id ),3) as `取餐时间超过20分钟的推单比率`,
+round(count(case when songcan_length>=60 then tab.tracking_id end)/count(tab.tracking_id ),3) as `送餐时间超过60分钟的推单比率`
+from  (
+      select distinct order_date,
+       eleme_order_id,
+       tracking_id,
+       hour(eleme_created_at) as h,
+       time_diff(tms_accept_at,accept_at)/60 as diaodu_length,
+       time_diff(accept_at,taker_arrive_rst_at)/60 as arrive_length,
+       time_diff(taker_arrive_rst_at,pickup_at)/60 as take_length,
+       time_diff(pickup_at,arrive_at)/60 as songcan_length
+       from dm.dm_tms_apollo_waybill_wide_detail 
+       where dt between get_date(-15) and  get_date(-1) 
+        and tms_source_id=1
+        and is_fml=0 
+        and tms_type in (5,7,10)
+        and order_date is not null) tab 
+where tab.h is not null
+group by tab.order_date, tab.h;
