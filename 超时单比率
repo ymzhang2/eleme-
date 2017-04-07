@@ -5,7 +5,7 @@ count(case when take_length>=20 then tab.tracking_id end) as `取餐时间超过
 count(case when songcan_length>=60 then tab.tracking_id end) as `送餐时间超过60分钟的推单数`,
 count(tab.tracking_id ) as `推单数`,
 round(count(case when diaodu_length>=10 then tab.tracking_id end)/count(tab.tracking_id ),3) as `调度时长超过十分钟的推单比率`,
-round(count(case when arrive_length>=30 then tab.tracking_id end)／count(tab.tracking_id ),3) as `到店时间超过30分钟的推单比率`,
+round(count(case when arrive_length>=30 then tab.tracking_id end)/count(tab.tracking_id ),3) as `到店时间超过30分钟的推单比率`,
 round(count(case when take_length>=20 then tab.tracking_id end)/count(tab.tracking_id ),3) as `取餐时间超过20分钟的推单比率`,
 round(count(case when songcan_length>=60 then tab.tracking_id end)/count(tab.tracking_id ),3) as `送餐时间超过60分钟的推单比率`
 from  (
