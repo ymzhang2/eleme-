@@ -1,14 +1,24 @@
 select hour(eleme_created_at) as h, 
-        case when time_diff(tms_accept_at,accept_at) /60<=5 then '0-5min' when time_diff(tms_accept_at,accept_at)/60>5 and time_diff(accept_at, tms_accept_at)/60 <=15 then '5-15min' else '>15min' end as `调度时长`, 
+        case when time_diff(tms_accept_at,accept_at) /60<=5 then '0-5min' 
+             when time_diff(tms_accept_at,accept_at)/60>5 and time_diff(tms_accept_at,accept_at)/60 <=15 then '5-15min' 
+             else '>15min' end as `调度时长`, 
         count(distinct tracking_id) as `推单量`, 
-        count(distinct case when (shipping_state in (60,90) and shipping_reason_code in(1,2,3) ) or (shipping_state=70 and order_remark_code in ('MERCHANT_INTERRUPT_DELIVERY_ERROR','MERCHANT_FOOD_ERROR','MERCHANT_CALL_LATE_ERROR','USER_NOT_ANSWER_ERROR','USER_RETURN_ORDER_ERROR','USER_ADDRESS_ERROR','DELIVERY_OUT_OF_SERVICE','SYSTEM_MARKED_ERROR','CARRIER_REMARK_EXCEPTION_ERROR','OTHER_ERROR')) then tracking_id end) as `异常取消单数`, 
-count(distinct case when shipping_state = 40 and is_valid = 1 and is_overtime = 1 then tracking_id end) as `超时单`, 
+        count(distinct case when (shipping_state in (60,90) and shipping_reason_code in(1,2,3) or shipping_state=70) then tracking_id end) as `异常取消单数`, 
+        count(distinct case when shipping_state = 40 and is_valid = 1 and is_overtime = 1 then tracking_id end) as `超时单`, 
         count(distinct case when shipping_state=40 and is_valid=1 then tracking_id end) as `有效完成单`, 
-        round(count(distinct case when (shipping_state in (60,90) and shipping_reason_code in(1,2,3) ) or (shipping_state=70 and order_remark_code in ('MERCHANT_INTERRUPT_DELIVERY_ERROR','MERCHANT_FOOD_ERROR','MERCHANT_CALL_LATE_ERROR','USER_NOT_ANSWER_ERROR','USER_RETURN_ORDER_ERROR','USER_ADDRESS_ERROR','DELIVERY_OUT_OF_SERVICE','SYSTEM_MARKED_ERROR','CARRIER_REMARK_EXCEPTION_ERROR','OTHER_ERROR')) then tracking_id end) /(count(distinct tracking_id)-count(distinct case when is_valid = 0 then tracking_id end)),3) as `异常取消率 `, 
-       round(count(distinct case when shipping_state = 40 and is_valid = 1 and is_overtime = 1 then tracking_id end) /count(distinct case when shipping_state=40 and is_valid=1 then tracking_id end),3) as `超单率`
+        round(count(distinct case when (shipping_state in (60,90) and shipping_reason_code in(1,2,3)  or shipping_state=70) then tracking_id end) 
+              /(count(distinct tracking_id)-count(distinct case when is_valid = 0 then tracking_id end)),3) as `异常取消率 `, 
+        round(count(distinct case when shipping_state = 40 and is_valid = 1 and is_overtime = 1 then tracking_id end) 
+        	  /count(distinct case when shipping_state=40 and is_valid=1 then tracking_id end),3) as `超单率`
 from dm.dm_tms_apollo_waybill_wide_detail 
-where dt between get_date(-30) and get_date(-1) and tms_source_id=1 and is_fml=0 and tms_type in (5,7,10) and hour(eleme_created_at) is not null and is_book=0 
+where dt between get_date(-30) and get_date(-1) 
+       and accept_at is not null 
+       and tms_source_id=1 
+       and is_fml=0 
+       and tms_type in (5,7,10) 
+       and hour(eleme_created_at) is not null 
+       and is_book=0 
 
 group by hour(eleme_created_at),  
-            case when time_diff( tms_accept_at,accept_at) /60<=5 then '0-5min' when time_diff(tms_accept_at,accept_at)/60>5 and time_diff(accept_at, tms_accept_at)/60 <=15 then '5-15min' else '>15min' end 
+            case when time_diff( tms_accept_at,accept_at) /60<=5 then '0-5min' when time_diff(tms_accept_at,accept_at)/60>5 and time_diff(tms_accept_at,accept_at)/60 <=15 then '5-15min' else '>15min' end 
 order by h,`调度时长`;
